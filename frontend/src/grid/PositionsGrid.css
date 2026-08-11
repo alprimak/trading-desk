@@ -1,0 +1,139 @@
+.positions-grid {
+  width: 100%;
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+/* Grid wrapper styling */
+.positions-table {
+  width: 100%;
+  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  font-size: 14px;
+  color: #fff;
+}
+
+/* Alignment helpers */
+.align-right {
+  text-align: right;
+}
+
+/* Tabular numbers for consistent alignment */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Symbol column */
+.symbol {
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Side column */
+.side {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.side-long {
+  color: #10b981;
+}
+
+.side-short {
+  color: #ef4444;
+}
+
+/* P&L coloring */
+.pnl-positive {
+  color: #10b981;
+}
+
+.pnl-negative {
+  color: #ef4444;
+}
+
+/* Cell change flashing animations */
+@keyframes flash-up {
+  0% {
+    background-color: rgba(16, 185, 129, 0.3);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes flash-down {
+  0% {
+    background-color: rgba(239, 68, 68, 0.3);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes flash-stale {
+  0% {
+    background-color: rgba(156, 163, 175, 0.3);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.cell-change-up {
+  animation: flash-up 180ms ease-out;
+}
+
+.cell-change-down {
+  animation: flash-down 180ms ease-out;
+}
+
+.cell-change-stale {
+  animation: flash-stale 180ms ease-out;
+}
+
+/* Exit button */
+.exit-button {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms;
+}
+
+.exit-button:hover {
+  background: #dc2626;
+}
+
+.exit-button:active {
+  background: #b91c1c;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+  font-style: italic;
+}
+
+/* Override askturret/grid styles if needed */
+.positions-table :global(.grid-header) {
+  background: #111;
+  border-bottom: 2px solid #333;
+}
+
+.positions-table :global(.grid-cell) {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #222;
+  transition: background-color 180ms ease-out;
+}
+
+.positions-table :global(.grid-row):hover {
+  background: #222;
+}
