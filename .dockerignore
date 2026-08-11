@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+
+# Operum
+.operum
+.operum-stash-recovery
+
+# Node
+node_modules
+frontend/node_modules
+frontend/dist
+frontend/.pnpm-store
+
+# Rust
+backend/target
+backend/Cargo.lock
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs (included in image)
+# docs/
+
+# Railway
+.railway
+
+# Logs
+*.log

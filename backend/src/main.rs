@@ -7,6 +7,7 @@ use serde_json::{json, Value};
 use std::env;
 use tower_http::{
     cors::CorsLayer,
+    services::ServeDir,
     trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer},
     LatencyUnit,
 };
@@ -81,6 +82,23 @@ async fn main() {
         .route("/api/agent/summary", post(agent::summary_json))
         .route("/api/agent/summary/stream", get(agent::summary_stream))
         .route("/ws", get(ws::ws_handler))
+        .fallback_service(
+            ServeDir::new("dist")
+                .not_found_service(ServeDir::new("dist").fallback(
+                    tower::util::service_fn(|_| async {
+                        Ok::<_, std::io::Error>(
+                            axum::http::Response::builder()
+                                .status(axum::http::StatusCode::OK)
+                                .header("content-type", "text/html")
+                                .body(axum::body::Body::from(
+                                    std::fs::read_to_string("dist/index.html")
+                                        .unwrap_or_else(|_| "Frontend not built".to_string()),
+                                ))
+                                .unwrap(),
+                        )
+                    }),
+                )),
+        )
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::new().include_headers(true))
