@@ -24,5 +24,6 @@ export interface Position {
 export type ClientMsg =
   | { type: 'enter'; client_id: string; symbol: string; side: 'long' | 'short'; qty: number }
   | { type: 'exit'; client_id: string; position_id: string }
+  | { type: 'adjust'; client_id: string; position_id: string; delta: number }
   | { type: 'resume'; client_id: string; last_seq: number }
   | { type: 'ping'; client_id: string };

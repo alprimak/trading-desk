@@ -140,8 +140,62 @@ impl Position {
         };
         self.status = PositionStatus::Closed;
         self.exit_price = Some(exit_price);
-        self.realized_pnl = Some(realized);
+        // Add any accumulated partial realized PnL from prior adjustments
+        let total_realized = realized + self.realized_pnl.unwrap_or(0.0);
+        self.realized_pnl = Some(total_realized);
         self.closed_at = Some(chrono::Utc::now().to_rfc3339());
+    }
+
+    /// Apply a qty delta (+ to increase, - to decrease/close)
+    /// Returns Ok(true) if position closed, Ok(false) if still open, Err on validation failure
+    pub fn apply_delta(&mut self, delta: f64, current_market_mid: f64) -> Result<bool, String> {
+        // Validation
+        if delta == 0.0 {
+            return Err("delta cannot be zero".to_string());
+        }
+        if delta.is_nan() || delta.is_infinite() {
+            return Err("delta must be a valid number".to_string());
+        }
+        if self.status != PositionStatus::Open {
+            return Err("cannot adjust a closed position".to_string());
+        }
+
+        let new_qty = self.qty + delta;
+
+        // Reject cross-side flip
+        if new_qty < 0.0 {
+            return Err(format!(
+                "delta {} would make qty negative (current: {})",
+                delta, self.qty
+            ));
+        }
+
+        if delta > 0.0 {
+            // Increase: compute weighted average entry price
+            let old_cost = self.qty * self.entry_price;
+            let new_cost = delta * current_market_mid;
+            self.entry_price = (old_cost + new_cost) / new_qty;
+            self.qty = new_qty;
+            Ok(false)
+        } else {
+            // Decrease (delta < 0)
+            let abs_delta = delta.abs();
+
+            if new_qty > 0.0 {
+                // Partial close: entry_price unchanged, book partial realized PnL
+                let partial_realized = match self.side {
+                    Side::Long => (current_market_mid - self.entry_price) * abs_delta,
+                    Side::Short => (self.entry_price - current_market_mid) * abs_delta,
+                };
+                self.realized_pnl = Some(self.realized_pnl.unwrap_or(0.0) + partial_realized);
+                self.qty = new_qty;
+                Ok(false)
+            } else {
+                // Full close (new_qty == 0): use existing close() method
+                self.close(current_market_mid);
+                Ok(true)
+            }
+        }
     }
 }
 
@@ -172,6 +226,11 @@ pub enum ClientMsg {
     Exit {
         client_id: String,
         position_id: String,
+    },
+    Adjust {
+        client_id: String,
+        position_id: String,
+        delta: f64,
     },
     Resume {
         client_id: String,

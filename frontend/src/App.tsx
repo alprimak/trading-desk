@@ -18,8 +18,14 @@ const SYMBOLS = [
 ];
 
 function App() {
-  const { positions, connected, lastError, enterPosition, exitPosition } =
-    useWebSocket();
+  const {
+    positions,
+    connected,
+    lastError,
+    enterPosition,
+    exitPosition,
+    adjustPosition,
+  } = useWebSocket();
 
   const [symbol, setSymbol] = useState(SYMBOLS[0]);
   const [side, setSide] = useState<'long' | 'short'>('long');
@@ -135,7 +141,11 @@ function App() {
           </form>
         </div>
 
-        <PositionsGrid positions={positions} onExitPosition={exitPosition} />
+        <PositionsGrid
+          positions={positions}
+          onExitPosition={exitPosition}
+          onAdjustPosition={adjustPosition}
+        />
 
         <SummaryPanel connected={connected} />
       </div>

@@ -164,6 +164,15 @@ class WebSocketStore {
       position_id: positionId,
     });
   }
+
+  adjustPosition(positionId: string, delta: number) {
+    this.send({
+      type: 'adjust',
+      client_id: CLIENT_ID,
+      position_id: positionId,
+      delta,
+    });
+  }
 }
 
 const store = new WebSocketStore();
@@ -182,5 +191,7 @@ export function useWebSocket() {
     enterPosition: (symbol: string, side: 'long' | 'short', qty: number) =>
       store.enterPosition(symbol, side, qty),
     exitPosition: (positionId: string) => store.exitPosition(positionId),
+    adjustPosition: (positionId: string, delta: number) =>
+      store.adjustPosition(positionId, delta),
   };
 }
