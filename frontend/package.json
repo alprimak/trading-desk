@@ -10,7 +10,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@askturret/grid": "^0.1.0",
+    "@askturret/grid": "^0.1.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

@@ -1,43 +1,20 @@
 .positions-grid {
   width: 100%;
-  overflow-x: auto;
   background: #1a1a1a;
   border-radius: 8px;
   padding: 1rem;
+  overflow: hidden;
 }
 
-.positions-grid table {
+/* Grid wrapper styling */
+.positions-table {
   width: 100%;
-  border-collapse: collapse;
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
   font-size: 14px;
+  color: #fff;
 }
 
-.positions-grid thead {
-  border-bottom: 2px solid #333;
-}
-
-.positions-grid th {
-  padding: 0.75rem 1rem;
-  text-align: left;
-  font-weight: 600;
-  color: #888;
-  text-transform: uppercase;
-  font-size: 11px;
-  letter-spacing: 0.05em;
-}
-
-.positions-grid td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #222;
-  transition: background-color 180ms ease-out;
-}
-
-.positions-grid tbody tr:hover {
-  background: #222;
-}
-
-/* Alignment */
+/* Alignment helpers */
 .align-right {
   text-align: right;
 }
@@ -143,4 +120,20 @@
   color: #666;
   padding: 2rem;
   font-style: italic;
+}
+
+/* Override askturret/grid styles if needed */
+.positions-table :global(.grid-header) {
+  background: #111;
+  border-bottom: 2px solid #333;
+}
+
+.positions-table :global(.grid-cell) {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #222;
+  transition: background-color 180ms ease-out;
+}
+
+.positions-table :global(.grid-row):hover {
+  background: #222;
 }
