@@ -1,5 +1,6 @@
 import { DataGrid, ColumnDef, useAdaptiveFlash } from '@askturret/grid';
 import type { Position } from '../types';
+import { formatCurrency, formatPnL } from '../utils/format';
 import './PositionsGrid.css';
 
 interface PositionsGridProps {
@@ -48,7 +49,7 @@ export function PositionsGrid({
       header: 'Entry',
       width: '120px',
       align: 'right',
-      formatter: (value) => `$${(value as number).toFixed(2)}`,
+      formatter: (value) => formatCurrency(value as number),
       cellClass: () => 'tabular-nums',
     },
     {
@@ -57,7 +58,7 @@ export function PositionsGrid({
       width: '120px',
       align: 'right',
       flashOnChange: true,
-      formatter: (value) => `$${(value as number).toFixed(2)}`,
+      formatter: (value) => formatCurrency(value as number),
       cellClass: () => 'tabular-nums',
     },
     {
@@ -66,11 +67,7 @@ export function PositionsGrid({
       width: '120px',
       align: 'right',
       flashOnChange: true,
-      formatter: (value) => {
-        const pnl = value as number;
-        const sign = pnl >= 0 ? '+' : '-';
-        return `${sign}$${Math.abs(pnl).toFixed(2)}`;
-      },
+      formatter: (value) => formatPnL(value as number),
       cellClass: (value) => {
         const pnl = value as number;
         if (pnl > 0) return 'tabular-nums pnl-positive';

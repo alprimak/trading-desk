@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useWebSocket } from './ws/useWebSocket';
 import { PositionsGrid } from './grid/PositionsGrid';
 import { SummaryPanel } from './agent/SummaryPanel';
+import { formatPnL } from './utils/format';
 import './App.css';
 
 const SYMBOLS = [
@@ -70,7 +71,7 @@ function App() {
               <span
                 className={`summary-value ${unrealizedPnL >= 0 ? 'pnl-positive' : 'pnl-negative'}`}
               >
-                {unrealizedPnL >= 0 ? '+' : '-'}${Math.abs(unrealizedPnL).toFixed(2)}
+                {formatPnL(unrealizedPnL)}
               </span>
             </div>
             <div className="summary-item">
@@ -78,7 +79,7 @@ function App() {
               <span
                 className={`summary-value ${realizedPnL === 0 ? '' : realizedPnL >= 0 ? 'pnl-positive' : 'pnl-negative'}`}
               >
-                {realizedPnL >= 0 ? '+' : '-'}${Math.abs(realizedPnL).toFixed(2)}
+                {formatPnL(realizedPnL)}
               </span>
             </div>
           </div>
