@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useWebSocket } from './ws/useWebSocket';
 import { PositionsGrid } from './grid/PositionsGrid';
+import { SummaryPanel } from './agent/SummaryPanel';
 import './App.css';
 
 const SYMBOLS = [
@@ -134,6 +135,8 @@ function App() {
             </div>
           </form>
         </div>
+
+        <SummaryPanel connected={connected} />
 
         <PositionsGrid positions={positions} onExitPosition={exitPosition} />
       </div>

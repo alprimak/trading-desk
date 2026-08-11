@@ -1,6 +1,6 @@
 use axum::{
     extract::State,
-    routing::get,
+    routing::{get, post},
     Json, Router,
 };
 use serde_json::{json, Value};
@@ -13,6 +13,7 @@ use tower_http::{
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+mod agent;
 mod feed;
 mod positions;
 mod state;
@@ -77,6 +78,8 @@ async fn main() {
     let app = Router::new()
         .route("/api/health", get(health))
         .route("/api/config", get(config))
+        .route("/api/agent/summary", post(agent::summary_json))
+        .route("/api/agent/summary/stream", get(agent::summary_stream))
         .route("/ws", get(ws::ws_handler))
         .layer(
             TraceLayer::new_for_http()
