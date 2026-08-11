@@ -5,9 +5,14 @@ import './PositionsGrid.css';
 interface PositionsGridProps {
   positions: Position[];
   onExitPosition: (positionId: string) => void;
+  onAdjustPosition: (positionId: string, delta: number) => void;
 }
 
-export function PositionsGrid({ positions, onExitPosition }: PositionsGridProps) {
+export function PositionsGrid({
+  positions,
+  onExitPosition,
+  onAdjustPosition,
+}: PositionsGridProps) {
   const openPositions = positions.filter((p) => p.status === 'open');
 
   // Adaptive performance: disable flash when FPS drops below 55
@@ -34,6 +39,7 @@ export function PositionsGrid({ positions, onExitPosition }: PositionsGridProps)
       header: 'Qty',
       width: '100px',
       align: 'right',
+      flashOnChange: true,
       formatter: (value) => (value as number).toString(),
       cellClass: () => 'tabular-nums',
     },
@@ -107,14 +113,31 @@ export function PositionsGrid({ positions, onExitPosition }: PositionsGridProps)
     {
       field: 'id',
       header: 'Action',
-      width: '100px',
+      width: '180px',
       formatter: (_value, row) => (
-        <button
-          onClick={() => onExitPosition(row.id)}
-          className="exit-button"
-        >
-          Exit
-        </button>
+        <div className="action-controls">
+          <button
+            onClick={() => onAdjustPosition(row.id, -1)}
+            className="adjust-button adjust-minus"
+            title="Decrease by 1"
+          >
+            −
+          </button>
+          <button
+            onClick={() => onAdjustPosition(row.id, 1)}
+            className="adjust-button adjust-plus"
+            title="Increase by 1"
+          >
+            +
+          </button>
+          <button
+            onClick={() => onExitPosition(row.id)}
+            className="exit-button"
+            title="Close position"
+          >
+            ✕
+          </button>
+        </div>
       ),
       cellClass: () => 'action-cell',
     },

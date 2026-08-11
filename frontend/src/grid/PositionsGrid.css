@@ -61,17 +61,77 @@
   color: #ef4444;
 }
 
-/* Exit button */
+/* Action controls cluster */
+.action-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Adjust buttons (- and +) */
+.adjust-button {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 4px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.adjust-minus {
+  background: #333;
+  color: #eee;
+}
+
+.adjust-minus:hover {
+  background: #444;
+}
+
+.adjust-minus:active {
+  background: #222;
+}
+
+.adjust-plus {
+  background: #10b981;
+  color: white;
+}
+
+.adjust-plus:hover {
+  background: #059669;
+}
+
+.adjust-plus:active {
+  background: #047857;
+}
+
+.adjust-button:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+/* Exit button (in cluster) */
 .exit-button {
+  width: 26px;
+  height: 26px;
   background: #ef4444;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 150ms;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .exit-button:hover {
