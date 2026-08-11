@@ -42,7 +42,8 @@ function App() {
   };
 
   const openPositions = positions.filter((p) => p.status === 'open');
-  const totalPnL = openPositions.reduce((sum, p) => sum + p.unrealized_pnl, 0);
+  const unrealizedPnL = openPositions.reduce((sum, p) => sum + p.unrealized_pnl, 0);
+  const realizedPnL = positions.reduce((sum, p) => sum + (p.realized_pnl ?? 0), 0);
 
   return (
     <div className="app">
@@ -65,11 +66,19 @@ function App() {
               <span className="summary-value">{openPositions.length}</span>
             </div>
             <div className="summary-item">
-              <span className="summary-label">Total P&L</span>
+              <span className="summary-label">Unrealized P&L</span>
               <span
-                className={`summary-value ${totalPnL >= 0 ? 'pnl-positive' : 'pnl-negative'}`}
+                className={`summary-value ${unrealizedPnL >= 0 ? 'pnl-positive' : 'pnl-negative'}`}
               >
-                {totalPnL >= 0 ? '+' : '-'}${Math.abs(totalPnL).toFixed(2)}
+                {unrealizedPnL >= 0 ? '+' : '-'}${Math.abs(unrealizedPnL).toFixed(2)}
+              </span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">Realized P&L</span>
+              <span
+                className={`summary-value ${realizedPnL === 0 ? '' : realizedPnL >= 0 ? 'pnl-positive' : 'pnl-negative'}`}
+              >
+                {realizedPnL >= 0 ? '+' : '-'}${Math.abs(realizedPnL).toFixed(2)}
               </span>
             </div>
           </div>
