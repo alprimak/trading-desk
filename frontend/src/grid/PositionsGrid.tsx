@@ -1,4 +1,4 @@
-import { DataGrid, ColumnDef } from '@askturret/grid';
+import { DataGrid, ColumnDef, useAdaptiveFlash } from '@askturret/grid';
 import type { Position } from '../types';
 import './PositionsGrid.css';
 
@@ -9,6 +9,9 @@ interface PositionsGridProps {
 
 export function PositionsGrid({ positions, onExitPosition }: PositionsGridProps) {
   const openPositions = positions.filter((p) => p.status === 'open');
+
+  // Adaptive performance: disable flash when FPS drops below 55
+  const { disableFlash } = useAdaptiveFlash();
 
   // Column definitions using the real @askturret/grid API
   const columns: ColumnDef<Position>[] = [
@@ -134,6 +137,7 @@ export function PositionsGrid({ positions, onExitPosition }: PositionsGridProps)
         className="positions-table"
         emptyMessage="No open positions"
         stickyHeader
+        disableFlash={disableFlash}
       />
     </div>
   );
