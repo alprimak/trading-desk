@@ -119,6 +119,10 @@
   animation: row-enter 200ms ease-out;
 }
 
+.positions-table :global(.grid-row.row-exit) {
+  animation: row-exit 200ms ease-out forwards;
+}
+
 @keyframes row-enter {
   from {
     opacity: 0;
@@ -127,5 +131,16 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes row-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
   }
 }
