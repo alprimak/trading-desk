@@ -63,7 +63,7 @@ function App() {
               <span
                 className={`summary-value ${totalPnL >= 0 ? 'pnl-positive' : 'pnl-negative'}`}
               >
-                {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
+                {totalPnL >= 0 ? '+' : '-'}${Math.abs(totalPnL).toFixed(2)}
               </span>
             </div>
           </div>
