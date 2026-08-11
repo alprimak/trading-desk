@@ -79,18 +79,20 @@ class WebSocketStore {
     this.state.lastSeq = msg.seq;
 
     switch (msg.type) {
-      case 'hello':
+      case 'hello': {
         console.log('Received hello with', msg.positions.length, 'positions');
         const newPositions = new Map<string, Position>();
         msg.positions.forEach((p) => newPositions.set(p.id, p));
         this.updateState({ positions: newPositions });
         break;
+      }
 
-      case 'position':
+      case 'position': {
         const updated = new Map(this.state.positions);
         updated.set(msg.position.id, msg.position);
         this.updateState({ positions: updated });
         break;
+      }
 
       case 'tick':
         // Ticks don't update position state directly (server sends position updates)

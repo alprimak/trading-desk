@@ -1,196 +1,255 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
 import type { Position } from './types';
+import App from './App';
 
-// Test the summary calculation logic from App.tsx
-describe('App summary calculations', () => {
-  describe('unrealizedPnL aggregation', () => {
+/**
+ * These tests render the real <App /> component and assert against its
+ * rendered output — they do NOT reimplement App's summary logic.
+ *
+ * Two collaborators are stubbed so the assertions stay focused on App itself:
+ *   - useWebSocket: the data source. Stubbing it is how we inject positions.
+ *   - PositionsGrid / SummaryPanel: separate components (explicitly out of
+ *     scope for #28) that pull in the WASM-backed grid and a streaming fetch.
+ *
+ * Everything under test — the open-position filter, both P&L aggregations,
+ * the color-class ternaries and the formatPnL output — is App.tsx's own code.
+ */
+
+const wsState = vi.hoisted(() => ({
+  positions: [] as Position[],
+  connected: true,
+  lastError: null as string | null,
+}));
+
+vi.mock('./ws/useWebSocket', () => ({
+  useWebSocket: () => ({
+    positions: wsState.positions,
+    connected: wsState.connected,
+    lastError: wsState.lastError,
+    enterPosition: vi.fn(),
+    exitPosition: vi.fn(),
+    adjustPosition: vi.fn(),
+  }),
+}));
+
+vi.mock('./grid/PositionsGrid', () => ({
+  PositionsGrid: ({ positions }: { positions: Position[] }) => (
+    <div data-testid="positions-grid">{positions.length}</div>
+  ),
+}));
+
+vi.mock('./agent/SummaryPanel', () => ({
+  SummaryPanel: () => <div data-testid="summary-panel" />,
+}));
+
+/** Build a position fixture; every field is overridable per test. */
+function makePosition(overrides: Partial<Position> = {}): Position {
+  return {
+    id: '1',
+    symbol: 'BTC-USD',
+    side: 'long',
+    qty: 1,
+    entry_price: 50000,
+    mark_price: 51000,
+    unrealized_pnl: 0,
+    opened_at: '2024-01-01T00:00:00Z',
+    status: 'open',
+    ...overrides,
+  };
+}
+
+/** Render App with the given websocket state and return the summary spans. */
+function renderApp(state: Partial<typeof wsState> = {}) {
+  wsState.positions = state.positions ?? [];
+  wsState.connected = state.connected ?? true;
+  wsState.lastError = state.lastError ?? null;
+  render(<App />);
+}
+
+/** The `.summary-value` span sitting next to the given summary label. */
+function summaryValue(label: string): HTMLElement {
+  const item = screen.getByText(label).closest('.summary-item');
+  expect(item).not.toBeNull();
+  const value = item!.querySelector('.summary-value');
+  expect(value).not.toBeNull();
+  return value as HTMLElement;
+}
+
+beforeEach(() => {
+  wsState.positions = [];
+  wsState.connected = true;
+  wsState.lastError = null;
+});
+
+afterEach(() => {
+  cleanup();
+});
+
+describe('App summary rendering', () => {
+  describe('unrealized P&L', () => {
     it('sums unrealized_pnl across open positions only', () => {
-      const positions: Position[] = [
-        {
-          id: '1',
-          symbol: 'BTC-USD',
-          side: 'long',
-          qty: 1,
-          entry_price: 50000,
-          mark_price: 51000,
-          unrealized_pnl: 1000,
-          opened_at: '2024-01-01T00:00:00Z',
-          status: 'open',
-        },
-        {
-          id: '2',
-          symbol: 'ETH-USD',
-          side: 'short',
-          qty: 10,
-          entry_price: 3000,
-          mark_price: 2900,
-          unrealized_pnl: 1000,
-          opened_at: '2024-01-01T00:00:00Z',
-          status: 'open',
-        },
-        {
-          id: '3',
-          symbol: 'SOL-USD',
-          side: 'long',
-          qty: 100,
-          entry_price: 100,
-          mark_price: 95,
-          unrealized_pnl: -500,
-          opened_at: '2024-01-01T00:00:00Z',
-          status: 'closed',
-          exit_price: 95,
-          realized_pnl: -500,
-        },
-      ];
+      renderApp({
+        positions: [
+          makePosition({ id: '1', unrealized_pnl: 1000, status: 'open' }),
+          makePosition({ id: '2', unrealized_pnl: 1000, status: 'open' }),
+          makePosition({
+            id: '3',
+            unrealized_pnl: -500,
+            status: 'closed',
+            exit_price: 95,
+            realized_pnl: -500,
+          }),
+        ],
+      });
 
-      const openPositions = positions.filter((p) => p.status === 'open');
-      const unrealizedPnL = openPositions.reduce((sum, p) => sum + p.unrealized_pnl, 0);
-
-      expect(unrealizedPnL).toBe(2000); // Only open positions: 1000 + 1000
+      // Closed position's -500 must NOT be included: 1000 + 1000
+      expect(summaryValue('Unrealized P&L').textContent).toBe('+$2,000.00');
     });
 
-    it('returns 0 when no open positions', () => {
-      const positions: Position[] = [];
-      const openPositions = positions.filter((p) => p.status === 'open');
-      const unrealizedPnL = openPositions.reduce((sum, p) => sum + p.unrealized_pnl, 0);
+    it('renders +$0.00 when there are no open positions', () => {
+      renderApp({ positions: [] });
 
-      expect(unrealizedPnL).toBe(0);
+      expect(summaryValue('Unrealized P&L').textContent).toBe('+$0.00');
     });
 
-    it('handles negative unrealized P&L', () => {
-      const positions: Position[] = [
-        {
-          id: '1',
-          symbol: 'BTC-USD',
-          side: 'long',
-          qty: 1,
-          entry_price: 50000,
-          mark_price: 48000,
-          unrealized_pnl: -2000,
-          opened_at: '2024-01-01T00:00:00Z',
-          status: 'open',
-        },
-      ];
+    it('renders negative unrealized P&L with the sign before the dollar', () => {
+      renderApp({
+        positions: [makePosition({ unrealized_pnl: -2000, status: 'open' })],
+      });
 
-      const openPositions = positions.filter((p) => p.status === 'open');
-      const unrealizedPnL = openPositions.reduce((sum, p) => sum + p.unrealized_pnl, 0);
+      expect(summaryValue('Unrealized P&L').textContent).toBe('-$2,000.00');
+    });
 
-      expect(unrealizedPnL).toBe(-2000);
+    it('applies pnl-positive for positive unrealized P&L', () => {
+      renderApp({
+        positions: [makePosition({ unrealized_pnl: 1234.56, status: 'open' })],
+      });
+
+      const value = summaryValue('Unrealized P&L');
+      expect(value.classList.contains('pnl-positive')).toBe(true);
+      expect(value.classList.contains('pnl-negative')).toBe(false);
+    });
+
+    it('applies pnl-negative for negative unrealized P&L', () => {
+      renderApp({
+        positions: [makePosition({ unrealized_pnl: -1234.56, status: 'open' })],
+      });
+
+      const value = summaryValue('Unrealized P&L');
+      expect(value.classList.contains('pnl-negative')).toBe(true);
+      expect(value.classList.contains('pnl-positive')).toBe(false);
+    });
+
+    it('applies pnl-positive for zero unrealized P&L', () => {
+      renderApp({
+        positions: [makePosition({ unrealized_pnl: 0, status: 'open' })],
+      });
+
+      expect(summaryValue('Unrealized P&L').classList.contains('pnl-positive')).toBe(true);
     });
   });
 
-  describe('realizedPnL aggregation', () => {
+  describe('realized P&L', () => {
     it('sums realized_pnl across ALL positions (open + closed)', () => {
-      const positions: Position[] = [
-        {
-          id: '1',
-          symbol: 'BTC-USD',
-          side: 'long',
-          qty: 1,
-          entry_price: 50000,
-          mark_price: 51000,
-          unrealized_pnl: 1000,
-          opened_at: '2024-01-01T00:00:00Z',
-          status: 'open',
-          realized_pnl: 200, // Partial reduce
-        },
-        {
-          id: '2',
-          symbol: 'ETH-USD',
-          side: 'short',
-          qty: 10,
-          entry_price: 3000,
-          mark_price: 2900,
-          unrealized_pnl: 0,
-          opened_at: '2024-01-01T00:00:00Z',
-          status: 'closed',
-          exit_price: 2900,
-          realized_pnl: 1000,
-        },
-      ];
+      renderApp({
+        positions: [
+          // Open position carrying realized P&L from a partial reduce
+          makePosition({ id: '1', unrealized_pnl: 1000, status: 'open', realized_pnl: 200 }),
+          makePosition({
+            id: '2',
+            unrealized_pnl: 0,
+            status: 'closed',
+            exit_price: 2900,
+            realized_pnl: 1000,
+          }),
+        ],
+      });
 
-      const realizedPnL = positions.reduce((sum, p) => sum + (p.realized_pnl ?? 0), 0);
-
-      expect(realizedPnL).toBe(1200); // 200 + 1000
+      expect(summaryValue('Realized P&L').textContent).toBe('+$1,200.00');
     });
 
-    it('handles missing realized_pnl (null/undefined)', () => {
-      const positions: Position[] = [
-        {
-          id: '1',
-          symbol: 'BTC-USD',
-          side: 'long',
-          qty: 1,
-          entry_price: 50000,
-          mark_price: 51000,
-          unrealized_pnl: 1000,
-          opened_at: '2024-01-01T00:00:00Z',
-          status: 'open',
-          // No realized_pnl field
-        },
-      ];
+    it('treats a missing realized_pnl as zero', () => {
+      renderApp({
+        // No realized_pnl field at all
+        positions: [makePosition({ unrealized_pnl: 1000, status: 'open' })],
+      });
 
-      const realizedPnL = positions.reduce((sum, p) => sum + (p.realized_pnl ?? 0), 0);
-
-      expect(realizedPnL).toBe(0);
+      expect(summaryValue('Realized P&L').textContent).toBe('+$0.00');
     });
 
-    it('returns 0 when no positions have realized P&L', () => {
-      const positions: Position[] = [
-        {
-          id: '1',
-          symbol: 'BTC-USD',
-          side: 'long',
-          qty: 1,
-          entry_price: 50000,
-          mark_price: 51000,
-          unrealized_pnl: 1000,
-          opened_at: '2024-01-01T00:00:00Z',
-          status: 'open',
-        },
-      ];
+    it('renders neutral color for zero realized P&L (issue #20)', () => {
+      renderApp({
+        positions: [makePosition({ realized_pnl: 0, status: 'open' })],
+      });
 
-      const realizedPnL = positions.reduce((sum, p) => sum + (p.realized_pnl ?? 0), 0);
+      const value = summaryValue('Realized P&L');
+      expect(value.classList.contains('pnl-positive')).toBe(false);
+      expect(value.classList.contains('pnl-negative')).toBe(false);
+    });
 
-      expect(realizedPnL).toBe(0);
+    it('applies pnl-positive for positive realized P&L', () => {
+      renderApp({
+        positions: [makePosition({ realized_pnl: 100, status: 'open' })],
+      });
+
+      const value = summaryValue('Realized P&L');
+      expect(value.textContent).toBe('+$100.00');
+      expect(value.classList.contains('pnl-positive')).toBe(true);
+    });
+
+    it('applies pnl-negative for negative realized P&L', () => {
+      renderApp({
+        positions: [makePosition({ realized_pnl: -100, status: 'open' })],
+      });
+
+      const value = summaryValue('Realized P&L');
+      expect(value.textContent).toBe('-$100.00');
+      expect(value.classList.contains('pnl-negative')).toBe(true);
     });
   });
 
-  describe('color class selection', () => {
-    it('selects pnl-positive for positive unrealized P&L', () => {
-      const unrealizedPnL = 1234.56;
-      const colorClass = unrealizedPnL >= 0 ? 'pnl-positive' : 'pnl-negative';
-      expect(colorClass).toBe('pnl-positive');
-    });
+  describe('open position count', () => {
+    it('counts only open positions', () => {
+      renderApp({
+        positions: [
+          makePosition({ id: '1', status: 'open' }),
+          makePosition({ id: '2', status: 'open' }),
+          makePosition({ id: '3', status: 'closed', realized_pnl: 10 }),
+        ],
+      });
 
-    it('selects pnl-negative for negative unrealized P&L', () => {
-      const unrealizedPnL = -1234.56;
-      const colorClass = unrealizedPnL >= 0 ? 'pnl-positive' : 'pnl-negative';
-      expect(colorClass).toBe('pnl-negative');
+      expect(summaryValue('Open Positions').textContent).toBe('2');
     });
+  });
+});
 
-    it('selects pnl-positive for zero unrealized P&L', () => {
-      const unrealizedPnL = 0;
-      const colorClass = unrealizedPnL >= 0 ? 'pnl-positive' : 'pnl-negative';
-      expect(colorClass).toBe('pnl-positive');
-    });
+describe('App connection state', () => {
+  it('shows Connected when the socket is up', () => {
+    renderApp({ connected: true });
 
-    it('selects neutral (empty string) for zero realized P&L (issue #20)', () => {
-      const realizedPnL = 0;
-      const colorClass = realizedPnL === 0 ? '' : realizedPnL >= 0 ? 'pnl-positive' : 'pnl-negative';
-      expect(colorClass).toBe('');
-    });
+    expect(screen.getByText('Connected')).not.toBeNull();
+    const indicator = document.querySelector('.status-indicator');
+    expect(indicator?.classList.contains('connected')).toBe(true);
+  });
 
-    it('selects pnl-positive for positive realized P&L', () => {
-      const realizedPnL = 100;
-      const colorClass = realizedPnL === 0 ? '' : realizedPnL >= 0 ? 'pnl-positive' : 'pnl-negative';
-      expect(colorClass).toBe('pnl-positive');
-    });
+  it('shows Disconnected when the socket is down', () => {
+    renderApp({ connected: false });
 
-    it('selects pnl-negative for negative realized P&L', () => {
-      const realizedPnL = -100;
-      const colorClass = realizedPnL === 0 ? '' : realizedPnL >= 0 ? 'pnl-positive' : 'pnl-negative';
-      expect(colorClass).toBe('pnl-negative');
-    });
+    expect(screen.getByText('Disconnected')).not.toBeNull();
+    const indicator = document.querySelector('.status-indicator');
+    expect(indicator?.classList.contains('disconnected')).toBe(true);
+  });
+
+  it('renders the error banner only when there is an error', () => {
+    renderApp({ lastError: null });
+    expect(document.querySelector('.error-banner')).toBeNull();
+
+    cleanup();
+
+    renderApp({ lastError: 'connection refused' });
+    const banner = document.querySelector('.error-banner');
+    expect(banner).not.toBeNull();
+    expect(banner!.textContent).toContain('connection refused');
   });
 });
