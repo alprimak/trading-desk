@@ -10,7 +10,9 @@ export function SignCrossingOverlay({ unrealizedPnL, connected }: SignCrossingOv
   const [flashState, setFlashState] = useState<'green' | 'red' | null>(null);
   const previousSignRef = useRef<number | null>(null);
   const lastFireTimeRef = useRef<number>(0);
-  const clearTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // ReturnType<typeof setTimeout>, not NodeJS.Timeout: this is browser code
+  // (window.setTimeout returns a number) and the frontend has no @types/node.
+  const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   useEffect(() => {
