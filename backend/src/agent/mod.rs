@@ -207,16 +207,21 @@ async fn stream_summary(state: &AppState) -> Result<Vec<String>, String> {
     // Build prompt
     let prompt_text = prompt::build_prompt(&positions);
 
-    // Call LLM with timeout and streaming
+    // Call LLM with timeout (non-streaming request to Anthropic)
+    // The complete response is chunked client-side for SSE delivery
     let result = timeout(
         LLM_TIMEOUT,
-        client.generate(&prompt_text, true), // streaming
+        client.generate(&prompt_text, false), // non-streaming
     )
     .await
     .map_err(|_| "Summary timed out after 4s".to_string())?
     .map_err(|e| format!("LLM error: {}", e))?;
 
-    // For now, streaming returns the full text as one token
-    // A real streaming implementation would collect SSE events from Anthropic
-    Ok(vec![result])
+    // Chunk the complete response into ~word-sized tokens for smooth streaming
+    let tokens = result
+        .split_whitespace()
+        .map(|s| format!("{} ", s))
+        .collect();
+
+    Ok(tokens)
 }
