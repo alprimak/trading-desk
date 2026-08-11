@@ -63,7 +63,7 @@ export function PositionsGrid({ positions, onExitPosition }: PositionsGridProps)
       formatter: (value) => {
         const pnl = value as number;
         const sign = pnl >= 0 ? '+' : '';
-        return `${sign}${pnl.toFixed(2)}`;
+        return `${sign}$${pnl.toFixed(2)}`;
       },
       cellClass: (value) => {
         const pnl = value as number;
