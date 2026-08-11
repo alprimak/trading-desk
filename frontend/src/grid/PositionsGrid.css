@@ -167,11 +167,12 @@
 }
 
 .positions-table :global(.grid-row) {
-  transition: background-color 150ms;
+  /* Removed transition to avoid interfering with cell flash animations */
 }
 
 .positions-table :global(.grid-row):hover {
   background: #1e1e1e;
+  /* Hover transitions applied instantly for sharp flash visibility */
 }
 
 /* Row enter transition */

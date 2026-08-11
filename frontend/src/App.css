@@ -198,9 +198,15 @@ body {
   border-color: #444;
 }
 
-.side-button.active {
+.side-button-long.active {
   background: #10b981;
   border-color: #10b981;
+  color: white;
+}
+
+.side-button-short.active {
+  background: #ef4444;
+  border-color: #ef4444;
   color: white;
 }
 
