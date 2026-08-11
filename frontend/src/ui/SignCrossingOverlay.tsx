@@ -10,6 +10,7 @@ export function SignCrossingOverlay({ unrealizedPnL, connected }: SignCrossingOv
   const [flashState, setFlashState] = useState<'green' | 'red' | null>(null);
   const previousSignRef = useRef<number | null>(null);
   const lastFireTimeRef = useRef<number>(0);
+  const clearTimerRef = useRef<NodeJS.Timeout | null>(null);
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   useEffect(() => {
@@ -60,12 +61,17 @@ export function SignCrossingOverlay({ unrealizedPnL, connected }: SignCrossingOv
     lastFireTimeRef.current = now;
     previousSignRef.current = currentSign;
 
-    // Clear flash after animation duration (900ms)
-    const timeout = setTimeout(() => {
-      setFlashState(null);
-    }, 900);
+    // Clear any existing timer before setting a new one
+    if (clearTimerRef.current !== null) {
+      clearTimeout(clearTimerRef.current);
+    }
 
-    return () => clearTimeout(timeout);
+    // Clear flash after animation duration (900ms)
+    // Managed in ref so it persists across renders and isn't cancelled by effect cleanup
+    clearTimerRef.current = setTimeout(() => {
+      setFlashState(null);
+      clearTimerRef.current = null;
+    }, 900);
   }, [unrealizedPnL, connected, prefersReducedMotion]);
 
   if (!flashState) {
