@@ -14,7 +14,7 @@ pub async fn run_feed(state: AppState, symbols: Vec<String>, tick_rate_hz: u64) 
     let position_update_hz = std::env::var("POSITION_UPDATE_HZ")
         .ok()
         .and_then(|s| s.parse::<u64>().ok())
-        .unwrap_or(5); // Default: 5 Hz (200ms cadence)
+        .unwrap_or(2); // Default: 2 Hz (500ms cadence) - lowered from 5 Hz per #13
 
     let position_update_interval = Duration::from_millis(1000 / position_update_hz);
     let mut last_broadcast: HashMap<String, Instant> = HashMap::new();
