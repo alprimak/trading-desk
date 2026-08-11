@@ -55,7 +55,7 @@ WORKDIR /app
 
 # Install runtime dependencies
 RUN apt-get update && \
-    apt-get install -y ca-certificates libssl3 && \
+    apt-get install -y ca-certificates libssl3 curl && \
     rm -rf /var/lib/apt/lists/* && \
     useradd -m -u 1000 appuser
 
