@@ -134,6 +134,8 @@ export function PositionsGrid({ positions, onExitPosition }: PositionsGridProps)
         className="positions-table"
         emptyMessage="No open positions"
         stickyHeader
+        // Adaptive performance mode: @askturret/grid auto-disables effects when FPS < 55
+        // This is enabled by default in v0.1.6+ and provides automatic optimization
       />
     </div>
   );

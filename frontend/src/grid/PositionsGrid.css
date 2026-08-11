@@ -1,9 +1,11 @@
 .positions-grid {
   width: 100%;
-  background: #1a1a1a;
+  background: #111;
+  border: 1px solid #222;
   border-radius: 8px;
   padding: 1rem;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 /* Grid wrapper styling */
@@ -30,18 +32,24 @@
   color: #fff;
 }
 
-/* Side column */
+/* Side column - pill badges */
 .side {
   font-weight: 600;
-  font-size: 12px;
+  font-size: 11px;
+  text-transform: uppercase;
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 .side-long {
-  color: #10b981;
+  background: #10b981;
+  color: #fff;
 }
 
 .side-short {
-  color: #ef4444;
+  background: #ef4444;
+  color: #fff;
 }
 
 /* P&L coloring */
@@ -51,46 +59,6 @@
 
 .pnl-negative {
   color: #ef4444;
-}
-
-/* Cell change flashing animations */
-@keyframes flash-up {
-  0% {
-    background-color: rgba(16, 185, 129, 0.3);
-  }
-  100% {
-    background-color: transparent;
-  }
-}
-
-@keyframes flash-down {
-  0% {
-    background-color: rgba(239, 68, 68, 0.3);
-  }
-  100% {
-    background-color: transparent;
-  }
-}
-
-@keyframes flash-stale {
-  0% {
-    background-color: rgba(156, 163, 175, 0.3);
-  }
-  100% {
-    background-color: transparent;
-  }
-}
-
-.cell-change-up {
-  animation: flash-up 180ms ease-out;
-}
-
-.cell-change-down {
-  animation: flash-down 180ms ease-out;
-}
-
-.cell-change-stale {
-  animation: flash-stale 180ms ease-out;
 }
 
 /* Exit button */
@@ -114,6 +82,11 @@
   background: #b91c1c;
 }
 
+.exit-button:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
 /* Empty state */
 .empty-state {
   text-align: center;
@@ -122,7 +95,7 @@
   font-style: italic;
 }
 
-/* Override askturret/grid styles if needed */
+/* Override askturret/grid styles */
 .positions-table :global(.grid-header) {
   background: #111;
   border-bottom: 2px solid #333;
@@ -131,9 +104,28 @@
 .positions-table :global(.grid-cell) {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid #222;
-  transition: background-color 180ms ease-out;
+}
+
+.positions-table :global(.grid-row) {
+  transition: background-color 150ms;
 }
 
 .positions-table :global(.grid-row):hover {
-  background: #222;
+  background: #1e1e1e;
+}
+
+/* Row enter/exit transitions */
+.positions-table :global(.grid-row) {
+  animation: row-enter 200ms ease-out;
+}
+
+@keyframes row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
