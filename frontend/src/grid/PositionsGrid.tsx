@@ -15,49 +15,49 @@ export function PositionsGrid({ positions, onExitPosition }: PositionsGridProps)
     {
       field: 'symbol',
       header: 'Symbol',
-      width: 120,
+      width: '120px',
       formatter: (value) => value as string,
-      cellClass: 'symbol',
+      cellClass: () => 'symbol',
     },
     {
       field: 'side',
       header: 'Side',
-      width: 80,
+      width: '80px',
       formatter: (value) => (value as string).toUpperCase(),
       cellClass: (value) => `side side-${value}`,
     },
     {
       field: 'qty',
       header: 'Qty',
-      width: 100,
+      width: '100px',
       align: 'right',
       formatter: (value) => (value as number).toString(),
-      cellClass: 'tabular-nums',
+      cellClass: () => 'tabular-nums',
     },
     {
       field: 'entry_price',
       header: 'Entry',
-      width: 120,
+      width: '120px',
       align: 'right',
       formatter: (value) => `$${(value as number).toFixed(2)}`,
-      cellClass: 'tabular-nums',
+      cellClass: () => 'tabular-nums',
     },
     {
       field: 'mark_price',
       header: 'Mark',
-      width: 120,
+      width: '120px',
       align: 'right',
-      flashOnChange: true, // Built-in flash highlighting
+      flashOnChange: true,
       formatter: (value) => `$${(value as number).toFixed(2)}`,
-      cellClass: 'tabular-nums',
+      cellClass: () => 'tabular-nums',
     },
     {
       field: 'unrealized_pnl',
       header: 'P&L $',
-      width: 120,
+      width: '120px',
       align: 'right',
-      flashOnChange: true, // Built-in flash highlighting
-      formatter: (value, row) => {
+      flashOnChange: true,
+      formatter: (value) => {
         const pnl = value as number;
         const sign = pnl >= 0 ? '+' : '';
         return `${sign}${pnl.toFixed(2)}`;
@@ -72,14 +72,14 @@ export function PositionsGrid({ positions, onExitPosition }: PositionsGridProps)
     {
       field: 'pnl_pct',
       header: 'P&L %',
-      width: 100,
+      width: '100px',
       align: 'right',
-      formatter: (_, row) => {
+      formatter: (_value, row) => {
         const pct = (row.unrealized_pnl / (row.entry_price * row.qty)) * 100;
         const sign = pct >= 0 ? '+' : '';
         return `${sign}${pct.toFixed(2)}%`;
       },
-      cellClass: (_, row) => {
+      cellClass: (_value, row) => {
         const pnl = row.unrealized_pnl;
         if (pnl > 0) return 'tabular-nums pnl-positive';
         if (pnl < 0) return 'tabular-nums pnl-negative';
@@ -89,7 +89,7 @@ export function PositionsGrid({ positions, onExitPosition }: PositionsGridProps)
     {
       field: 'opened_at',
       header: 'Age',
-      width: 80,
+      width: '80px',
       align: 'right',
       formatter: (value) => {
         const seconds = Math.floor(
@@ -99,17 +99,21 @@ export function PositionsGrid({ positions, onExitPosition }: PositionsGridProps)
         if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
         return `${Math.floor(seconds / 3600)}h`;
       },
-      cellClass: 'tabular-nums',
+      cellClass: () => 'tabular-nums',
     },
     {
-      field: 'id', // Use id as field for action column
+      field: 'id',
       header: 'Action',
-      width: 100,
-      formatter: (_, row) => {
-        // Return a placeholder - actual button will be in cellClass/custom render
-        return 'Exit';
-      },
-      cellClass: 'action-cell',
+      width: '100px',
+      formatter: (_value, row) => (
+        <button
+          onClick={() => onExitPosition(row.id)}
+          className="exit-button"
+        >
+          Exit
+        </button>
+      ),
+      cellClass: () => 'action-cell',
     },
   ];
 
@@ -131,23 +135,6 @@ export function PositionsGrid({ positions, onExitPosition }: PositionsGridProps)
         emptyMessage="No open positions"
         stickyHeader
       />
-      {/* Action buttons rendered separately since formatter returns strings/ReactNode */}
-      <div className="action-overlay">
-        {openPositions.map((pos, idx) => (
-          <button
-            key={pos.id}
-            onClick={() => onExitPosition(pos.id)}
-            className="exit-button"
-            style={{
-              position: 'absolute',
-              top: `${(idx + 1) * 48 + 12}px`, // Assuming ~48px row height + header
-              right: '20px',
-            }}
-          >
-            Exit
-          </button>
-        ))}
-      </div>
     </div>
   );
 }

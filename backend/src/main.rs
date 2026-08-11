@@ -86,7 +86,7 @@ async fn main() {
             ServeDir::new("dist")
                 .not_found_service(ServeDir::new("dist").fallback(
                     tower::util::service_fn(|_| async {
-                        Ok::<_, std::io::Error>(
+                        Ok::<_, std::convert::Infallible>(
                             axum::http::Response::builder()
                                 .status(axum::http::StatusCode::OK)
                                 .header("content-type", "text/html")
