@@ -9,9 +9,29 @@ on:
     paths: ["backend/**", "frontend/**", ".github/workflows/ci.yml"]
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/ci.yml'
+            backend:
+              - 'backend/**'
+              - '.github/workflows/ci.yml'
+
   backend:
     name: Backend (Rust)
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -58,6 +78,8 @@ jobs:
   frontend:
     name: Frontend (Node)
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     steps:
       - uses: actions/checkout@v4
 
