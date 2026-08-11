@@ -106,14 +106,14 @@ function App() {
                 <div className="side-buttons">
                   <button
                     type="button"
-                    className={`side-button ${side === 'long' ? 'active' : ''}`}
+                    className={`side-button side-button-long ${side === 'long' ? 'active' : ''}`}
                     onClick={() => setSide('long')}
                   >
                     Long
                   </button>
                   <button
                     type="button"
-                    className={`side-button ${side === 'short' ? 'active' : ''}`}
+                    className={`side-button side-button-short ${side === 'short' ? 'active' : ''}`}
                     onClick={() => setSide('short')}
                   >
                     Short
