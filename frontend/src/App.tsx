@@ -135,9 +135,9 @@ function App() {
           </form>
         </div>
 
-        <SummaryPanel connected={connected} />
-
         <PositionsGrid positions={positions} onExitPosition={exitPosition} />
+
+        <SummaryPanel connected={connected} />
       </div>
     </div>
   );
