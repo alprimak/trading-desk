@@ -10,52 +10,77 @@ jobs:
   backend:
     name: Backend (Rust)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check if backend exists
+        id: check-backend
+        run: |
+          if [ -f "backend/Cargo.toml" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Backend directory not found - skipping"
+          fi
+
       - name: Install Rust toolchain
+        if: steps.check-backend.outputs.exists == 'true'
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache cargo registry
+        if: steps.check-backend.outputs.exists == 'true'
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Cache cargo index
+        if: steps.check-backend.outputs.exists == 'true'
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
           key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Cache cargo build
+        if: steps.check-backend.outputs.exists == 'true'
         uses: actions/cache@v4
         with:
           path: backend/target
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Check backend
+        if: steps.check-backend.outputs.exists == 'true'
+        working-directory: ./backend
         run: cargo check --release
 
   frontend:
     name: Frontend (Node)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check if frontend exists
+        id: check-frontend
+        run: |
+          if [ -f "frontend/package.json" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Frontend directory not found - skipping"
+          fi
+
       - name: Setup Node.js
+        if: steps.check-frontend.outputs.exists == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: Install dependencies
+        if: steps.check-frontend.outputs.exists == 'true'
+        working-directory: ./frontend
         run: npm install
 
       - name: Build frontend
+        if: steps.check-frontend.outputs.exists == 'true'
+        working-directory: ./frontend
         run: npm run build
