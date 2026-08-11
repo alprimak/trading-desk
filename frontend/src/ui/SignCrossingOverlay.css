@@ -1,0 +1,52 @@
+/*
+ * Whole-screen P&L sign-change highlight overlay
+ * Spec: radial-gradient vignette, 900ms fade, cubic-bezier easing
+ * Colors: #10b981 (green, crossing positive) / #ef4444 (red, crossing negative)
+ * Peak alpha: 0.30 at edges, transparent center at 40%
+ */
+
+.sign-crossing-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  animation: sign-crossing-fade 900ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.sign-crossing-overlay--green {
+  background: radial-gradient(
+    circle at center,
+    transparent 40%,
+    rgba(16, 185, 129, 0.30) 100%
+  );
+}
+
+.sign-crossing-overlay--red {
+  background: radial-gradient(
+    circle at center,
+    transparent 40%,
+    rgba(239, 68, 68, 0.30) 100%
+  );
+}
+
+@keyframes sign-crossing-fade {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Honor prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .sign-crossing-overlay {
+    display: none;
+  }
+}
