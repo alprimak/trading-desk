@@ -11,8 +11,8 @@ WORKDIR /app/frontend
 # Copy frontend package files
 COPY frontend/package.json frontend/package-lock.json* ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (use install if no lock file)
+RUN npm install
 
 # Copy frontend source
 COPY frontend/ ./
@@ -41,6 +41,9 @@ RUN mkdir src && \
 
 # Copy backend source
 COPY backend/src ./src
+
+# Remove dummy build artifacts to force rebuild with real source
+RUN rm -rf target/release/deps/trading_desk* target/release/trading-desk*
 
 # Build backend (this invalidates the dependency cache but that's fine)
 RUN cargo build --release

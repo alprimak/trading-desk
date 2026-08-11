@@ -33,58 +33,59 @@ pub async fn run_feed(state: AppState, symbols: Vec<String>, tick_rate_hz: u64) 
     loop {
         interval.tick().await;
 
-        // Pick a random symbol to update
-        let symbol = &symbols[rand::thread_rng().gen_range(0..symbols.len())];
-        let current_price = prices.get(symbol).copied().unwrap_or(100.0);
+        // Update and emit tick for EACH symbol on every interval tick
+        for symbol in &symbols {
+            let current_price = prices.get(symbol).copied().unwrap_or(100.0);
 
-        // Random walk with small variance
-        let change_pct = rand::thread_rng().gen_range(-0.001..0.001);
-        let new_price = current_price * (1.0 + change_pct);
-        prices.insert(symbol.clone(), new_price);
+            // Random walk with small variance
+            let change_pct = rand::thread_rng().gen_range(-0.001..0.001);
+            let new_price = current_price * (1.0 + change_pct);
+            prices.insert(symbol.clone(), new_price);
 
-        // Spread is 0.05% of price
-        let spread = new_price * 0.0005;
-        let bid = new_price - spread / 2.0;
-        let ask = new_price + spread / 2.0;
+            // Spread is 0.05% of price
+            let spread = new_price * 0.0005;
+            let bid = new_price - spread / 2.0;
+            let ask = new_price + spread / 2.0;
 
-        let tick = Tick {
-            symbol: symbol.clone(),
-            bid,
-            ask,
-            last: new_price,
-            ts: chrono::Utc::now().to_rfc3339(),
-        };
+            let tick = Tick {
+                symbol: symbol.clone(),
+                bid,
+                ask,
+                last: new_price,
+                ts: chrono::Utc::now().to_rfc3339(),
+            };
 
-        // Store latest tick
-        state.latest_ticks.insert(symbol.clone(), tick.clone());
+            // Store latest tick
+            state.latest_ticks.insert(symbol.clone(), tick.clone());
 
-        // Update all open positions for this symbol with new mark price
-        let mid = tick.mid();
-        for mut entry in state.positions.iter_mut() {
-            if entry.symbol == *symbol && entry.status == crate::state::PositionStatus::Open {
-                entry.update_mark(mid);
+            // Update all open positions for this symbol with new mark price
+            let mid = tick.mid();
+            for mut entry in state.positions.iter_mut() {
+                if entry.symbol == *symbol && entry.status == crate::state::PositionStatus::Open {
+                    entry.update_mark(mid);
 
-                // Broadcast position update
-                let msg = ServerMsg::Position {
-                    seq: state.next_seq(),
-                    position: entry.value().clone(),
-                };
-                let _ = state.tx.send(msg);
+                    // Broadcast position update
+                    let msg = ServerMsg::Position {
+                        seq: state.next_seq(),
+                        position: entry.value().clone(),
+                    };
+                    let _ = state.tx.send(msg);
+                }
             }
-        }
 
-        // Broadcast tick
-        let msg = ServerMsg::Tick {
-            seq: state.next_seq(),
-            symbol: tick.symbol.clone(),
-            bid: tick.bid,
-            ask: tick.ask,
-            last: tick.last,
-            ts: tick.ts,
-        };
+            // Broadcast tick
+            let msg = ServerMsg::Tick {
+                seq: state.next_seq(),
+                symbol: tick.symbol.clone(),
+                bid: tick.bid,
+                ask: tick.ask,
+                last: tick.last,
+                ts: tick.ts,
+            };
 
-        if let Err(e) = state.tx.send(msg) {
-            debug!("No active subscribers: {}", e);
+            if let Err(e) = state.tx.send(msg) {
+                debug!("No active subscribers: {}", e);
+            }
         }
     }
 }

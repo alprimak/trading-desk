@@ -109,34 +109,41 @@ pub async fn summary_stream(
     }
     drop(cache);
 
-    // Stream new summary
-    let stream = stream::unfold(state, |state| async move {
-        match stream_summary(&state).await {
-            Ok(tokens) => {
-                // Cache the complete summary
-                let complete = tokens.join("");
-                let mut cache = get_cache().write().await;
-                *cache = (complete, std::time::Instant::now());
-                drop(cache);
+    // Stream new summary (wrapped in Option to terminate after one summary)
+    let stream = stream::unfold(Some(state), |state_opt| async move {
+        match state_opt {
+            None => None, // Stream terminated
+            Some(state) => {
+                match stream_summary(&state).await {
+                    Ok(tokens) => {
+                        // Cache the complete summary
+                        let complete = tokens.join("");
+                        let mut cache = get_cache().write().await;
+                        *cache = (complete, std::time::Instant::now());
+                        drop(cache);
 
-                // Emit tokens as SSE events
-                let events: Vec<_> = tokens
-                    .into_iter()
-                    .map(|token| Ok(Event::default().event("token").data(token)))
-                    .collect();
+                        // Emit tokens as SSE events
+                        let events: Vec<_> = tokens
+                            .into_iter()
+                            .map(|token| Ok(Event::default().event("token").data(token)))
+                            .collect();
 
-                // Emit final "done" event
-                let mut all_events = events;
-                all_events.push(Ok(Event::default().event("done").data("")));
+                        // Emit final "done" event
+                        let mut all_events = events;
+                        all_events.push(Ok(Event::default().event("done").data("")));
 
-                Some((stream::iter(all_events).boxed(), state))
-            }
-            Err(e) => {
-                error!("Summary streaming failed: {}", e);
-                let error_event = Ok(Event::default()
-                    .event("error")
-                    .data(format!("Summary unavailable: {}", e)));
-                Some((stream::once(async move { error_event }).boxed(), state))
+                        // Return None as new state to terminate stream after this
+                        Some((stream::iter(all_events).boxed(), None))
+                    }
+                    Err(e) => {
+                        error!("Summary streaming failed: {}", e);
+                        let error_event = Ok(Event::default()
+                            .event("error")
+                            .data(format!("Summary unavailable: {}", e)));
+                        // Return None as new state to terminate stream after error
+                        Some((stream::once(async move { error_event }).boxed(), None))
+                    }
+                }
             }
         }
     })
