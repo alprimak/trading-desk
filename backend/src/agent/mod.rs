@@ -8,9 +8,10 @@ use axum::{
     },
     Json,
 };
-use futures::stream::{self, Stream};
+use futures::stream::{self, Stream, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::convert::Infallible;
+use std::pin::Pin;
 use std::time::Duration;
 use tokio::time::timeout;
 use tracing::{error, info};
@@ -87,7 +88,7 @@ pub async fn summary_json(State(state): State<AppState>) -> Response {
 /// GET /api/agent/summary/stream - SSE streaming endpoint
 pub async fn summary_stream(
     State(state): State<AppState>,
-) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+) -> Sse<Pin<Box<dyn Stream<Item = Result<Event, Infallible>> + Send>>> {
     info!("Received summary request (SSE)");
 
     // Check cache first
@@ -101,7 +102,8 @@ pub async fn summary_stream(
             Ok(Event::default()
                 .event("summary")
                 .data(cached_summary))
-        });
+        })
+        .boxed();
 
         return Sse::new(stream).keep_alive(KeepAlive::default());
     }
@@ -127,18 +129,19 @@ pub async fn summary_stream(
                 let mut all_events = events;
                 all_events.push(Ok(Event::default().event("done").data("")));
 
-                Some((stream::iter(all_events), state))
+                Some((stream::iter(all_events).boxed(), state))
             }
             Err(e) => {
                 error!("Summary streaming failed: {}", e);
                 let error_event = Ok(Event::default()
                     .event("error")
                     .data(format!("Summary unavailable: {}", e)));
-                Some((stream::once(async move { error_event }), state))
+                Some((stream::once(async move { error_event }).boxed(), state))
             }
         }
     })
-    .flatten();
+    .flatten()
+    .boxed();
 
     Sse::new(stream).keep_alive(KeepAlive::default())
 }

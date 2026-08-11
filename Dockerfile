@@ -9,17 +9,16 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Copy frontend package files
-COPY frontend/package.json frontend/pnpm-lock.json* ./
+COPY frontend/package.json frontend/package-lock.json* ./
 
-# Install pnpm and dependencies
-RUN npm install -g pnpm@8 && \
-    pnpm install --frozen-lockfile
+# Install dependencies
+RUN npm ci
 
 # Copy frontend source
 COPY frontend/ ./
 
 # Build frontend
-RUN pnpm build
+RUN npm run build
 
 # Stage 2: Backend build
 FROM rust:1-slim AS backend-builder

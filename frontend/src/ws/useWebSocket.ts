@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 import type { ServerMsg, ClientMsg, Position } from '../types';
 
 const CLIENT_ID = `client-${Math.random().toString(36).substring(7)}`;

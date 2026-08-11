@@ -1,5 +1,4 @@
-import { useMemo, useRef, useEffect } from 'react';
-import { Grid, Column } from '@askturret/grid';
+import { DataGrid, ColumnDef } from '@askturret/grid';
 import type { Position } from '../types';
 import './PositionsGrid.css';
 
@@ -8,197 +7,111 @@ interface PositionsGridProps {
   onExitPosition: (positionId: string) => void;
 }
 
-interface CellChange {
-  rowId: string;
-  field: string;
-  direction: 'up' | 'down' | 'stale';
-  timestamp: number;
-}
-
 export function PositionsGrid({ positions, onExitPosition }: PositionsGridProps) {
-  const prevPositionsRef = useRef<Map<string, Position>>(new Map());
-  const changesRef = useRef<Map<string, CellChange>>(new Map());
+  const openPositions = positions.filter((p) => p.status === 'open');
 
-  // Track cell changes for flashing animations
-  useEffect(() => {
-    const prev = prevPositionsRef.current;
-    const changes = new Map<string, CellChange>();
-
-    positions.forEach((pos) => {
-      const prevPos = prev.get(pos.id);
-      if (prevPos && pos.status === 'open') {
-        // Check for changes in numeric fields
-        const fields: (keyof Position)[] = ['mark_price', 'unrealized_pnl'];
-        fields.forEach((field) => {
-          const prevValue = prevPos[field] as number;
-          const currentValue = pos[field] as number;
-          if (prevValue !== currentValue) {
-            const direction = currentValue > prevValue ? 'up' : 'down';
-            changes.set(`${pos.id}-${field}`, {
-              rowId: pos.id,
-              field: field as string,
-              direction,
-              timestamp: Date.now(),
-            });
-          }
-        });
-      }
-    });
-
-    changesRef.current = changes;
-
-    // Update previous positions
-    const newPrev = new Map<string, Position>();
-    positions.forEach((p) => newPrev.set(p.id, p));
-    prevPositionsRef.current = newPrev;
-
-    // Clear old changes after animation duration
-    const timer = setTimeout(() => {
-      const now = Date.now();
-      changesRef.current.forEach((change, key) => {
-        if (now - change.timestamp > 180) {
-          changesRef.current.delete(key);
-        }
-      });
-    }, 200);
-
-    return () => clearTimeout(timer);
-  }, [positions]);
-
-  const openPositions = useMemo(
-    () => positions.filter((p) => p.status === 'open'),
-    [positions]
-  );
-
-  const getChangeClass = (posId: string, field: string) => {
-    const change = changesRef.current.get(`${posId}-${field}`);
-    return change ? `cell-change-${change.direction}` : '';
-  };
-
-  const getPnLClass = (pnl: number) => {
-    if (pnl > 0) return 'pnl-positive';
-    if (pnl < 0) return 'pnl-negative';
-    return '';
-  };
-
-  // Column definitions for @askturret/grid
-  const columns: Column<Position>[] = useMemo(
-    () => [
-      {
-        id: 'symbol',
-        header: 'Symbol',
-        accessorKey: 'symbol',
-        cell: ({ value }: { value: string }) => (
-          <span className="symbol">{value}</span>
-        ),
+  // Column definitions using the real @askturret/grid API
+  const columns: ColumnDef<Position>[] = [
+    {
+      field: 'symbol',
+      header: 'Symbol',
+      width: 120,
+      formatter: (value) => value as string,
+      cellClass: 'symbol',
+    },
+    {
+      field: 'side',
+      header: 'Side',
+      width: 80,
+      formatter: (value) => (value as string).toUpperCase(),
+      cellClass: (value) => `side side-${value}`,
+    },
+    {
+      field: 'qty',
+      header: 'Qty',
+      width: 100,
+      align: 'right',
+      formatter: (value) => (value as number).toString(),
+      cellClass: 'tabular-nums',
+    },
+    {
+      field: 'entry_price',
+      header: 'Entry',
+      width: 120,
+      align: 'right',
+      formatter: (value) => `$${(value as number).toFixed(2)}`,
+      cellClass: 'tabular-nums',
+    },
+    {
+      field: 'mark_price',
+      header: 'Mark',
+      width: 120,
+      align: 'right',
+      flashOnChange: true, // Built-in flash highlighting
+      formatter: (value) => `$${(value as number).toFixed(2)}`,
+      cellClass: 'tabular-nums',
+    },
+    {
+      field: 'unrealized_pnl',
+      header: 'P&L $',
+      width: 120,
+      align: 'right',
+      flashOnChange: true, // Built-in flash highlighting
+      formatter: (value, row) => {
+        const pnl = value as number;
+        const sign = pnl >= 0 ? '+' : '';
+        return `${sign}${pnl.toFixed(2)}`;
       },
-      {
-        id: 'side',
-        header: 'Side',
-        accessorKey: 'side',
-        cell: ({ value }: { value: 'long' | 'short' }) => (
-          <span className={`side side-${value}`}>{value.toUpperCase()}</span>
-        ),
+      cellClass: (value) => {
+        const pnl = value as number;
+        if (pnl > 0) return 'tabular-nums pnl-positive';
+        if (pnl < 0) return 'tabular-nums pnl-negative';
+        return 'tabular-nums';
       },
-      {
-        id: 'qty',
-        header: 'Qty',
-        accessorKey: 'qty',
-        align: 'right',
-        cell: ({ value }: { value: number }) => (
-          <span className="tabular-nums">{value}</span>
-        ),
+    },
+    {
+      field: 'pnl_pct',
+      header: 'P&L %',
+      width: 100,
+      align: 'right',
+      formatter: (_, row) => {
+        const pct = (row.unrealized_pnl / (row.entry_price * row.qty)) * 100;
+        const sign = pct >= 0 ? '+' : '';
+        return `${sign}${pct.toFixed(2)}%`;
       },
-      {
-        id: 'entry_price',
-        header: 'Entry',
-        accessorKey: 'entry_price',
-        align: 'right',
-        cell: ({ value }: { value: number }) => (
-          <span className="tabular-nums">${value.toFixed(2)}</span>
-        ),
+      cellClass: (_, row) => {
+        const pnl = row.unrealized_pnl;
+        if (pnl > 0) return 'tabular-nums pnl-positive';
+        if (pnl < 0) return 'tabular-nums pnl-negative';
+        return 'tabular-nums';
       },
-      {
-        id: 'mark_price',
-        header: 'Mark',
-        accessorKey: 'mark_price',
-        align: 'right',
-        cell: ({ value, row }: { value: number; row: Position }) => (
-          <span
-            className={`tabular-nums ${getChangeClass(row.id, 'mark_price')}`}
-          >
-            ${value.toFixed(2)}
-          </span>
-        ),
+    },
+    {
+      field: 'opened_at',
+      header: 'Age',
+      width: 80,
+      align: 'right',
+      formatter: (value) => {
+        const seconds = Math.floor(
+          (Date.now() - new Date(value as string).getTime()) / 1000
+        );
+        if (seconds < 60) return `${seconds}s`;
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+        return `${Math.floor(seconds / 3600)}h`;
       },
-      {
-        id: 'unrealized_pnl',
-        header: 'P&L $',
-        accessorKey: 'unrealized_pnl',
-        align: 'right',
-        cell: ({ value, row }: { value: number; row: Position }) => {
-          const sign = value >= 0 ? '+' : '';
-          return (
-            <span
-              className={`tabular-nums ${getPnLClass(value)} ${getChangeClass(
-                row.id,
-                'unrealized_pnl'
-              )}`}
-            >
-              {sign}
-              {value.toFixed(2)}
-            </span>
-          );
-        },
+      cellClass: 'tabular-nums',
+    },
+    {
+      field: 'id', // Use id as field for action column
+      header: 'Action',
+      width: 100,
+      formatter: (_, row) => {
+        // Return a placeholder - actual button will be in cellClass/custom render
+        return 'Exit';
       },
-      {
-        id: 'pnl_pct',
-        header: 'P&L %',
-        accessorFn: (row: Position) =>
-          (row.unrealized_pnl / (row.entry_price * row.qty)) * 100,
-        align: 'right',
-        cell: ({ value, row }: { value: number; row: Position }) => {
-          const sign = value >= 0 ? '+' : '';
-          return (
-            <span className={`tabular-nums ${getPnLClass(row.unrealized_pnl)}`}>
-              {sign}
-              {value.toFixed(2)}%
-            </span>
-          );
-        },
-      },
-      {
-        id: 'age',
-        header: 'Age',
-        accessorKey: 'opened_at',
-        align: 'right',
-        cell: ({ value }: { value: string }) => {
-          const seconds = Math.floor(
-            (Date.now() - new Date(value).getTime()) / 1000
-          );
-          let display;
-          if (seconds < 60) display = `${seconds}s`;
-          else if (seconds < 3600)
-            display = `${Math.floor(seconds / 60)}m`;
-          else display = `${Math.floor(seconds / 3600)}h`;
-          return <span className="tabular-nums">{display}</span>;
-        },
-      },
-      {
-        id: 'action',
-        header: 'Action',
-        cell: ({ row }: { row: Position }) => (
-          <button
-            onClick={() => onExitPosition(row.id)}
-            className="exit-button"
-          >
-            Exit
-          </button>
-        ),
-      },
-    ],
-    [onExitPosition]
-  );
+      cellClass: 'action-cell',
+    },
+  ];
 
   if (openPositions.length === 0) {
     return (
@@ -210,12 +123,31 @@ export function PositionsGrid({ positions, onExitPosition }: PositionsGridProps)
 
   return (
     <div className="positions-grid">
-      <Grid
+      <DataGrid
         data={openPositions}
         columns={columns}
-        getRowId={(row: Position) => row.id}
+        rowKey="id"
         className="positions-table"
+        emptyMessage="No open positions"
+        stickyHeader
       />
+      {/* Action buttons rendered separately since formatter returns strings/ReactNode */}
+      <div className="action-overlay">
+        {openPositions.map((pos, idx) => (
+          <button
+            key={pos.id}
+            onClick={() => onExitPosition(pos.id)}
+            className="exit-button"
+            style={{
+              position: 'absolute',
+              top: `${(idx + 1) * 48 + 12}px`, // Assuming ~48px row height + header
+              right: '20px',
+            }}
+          >
+            Exit
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
