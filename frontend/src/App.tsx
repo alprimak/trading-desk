@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useWebSocket } from './ws/useWebSocket';
 import { PositionsGrid } from './grid/PositionsGrid';
 import { SummaryPanel } from './agent/SummaryPanel';
+import { SignCrossingOverlay } from './ui/SignCrossingOverlay';
 import { formatPnL } from './utils/format';
 import './App.css';
 
@@ -159,6 +160,8 @@ function App() {
 
         <SummaryPanel connected={connected} />
       </div>
+
+      <SignCrossingOverlay unrealizedPnL={unrealizedPnL} connected={connected} />
     </div>
   );
 }
